@@ -10,3 +10,9 @@ While I can't share the individual participant data, anyone with access to UK Bi
 
 The way we defined and excluded participants is explained in the University of Bristol quality control documentation for UK Biobank genetic data:
 https://data.bris.ac.uk/datasets/1ovaau5sxunp2cv8rcy88688v/UK%20Biobank%20Genetic%20Data_MRC%20IEU%20Quality%20Control%20version%202.pdf
+
+##EDIT 2019-06-20##
+
+I've updated the repo to include an updated analysis file, which does more analyses and includes another SNP.
+
+I've also written a blog post about all this, and included a word document with the text.
