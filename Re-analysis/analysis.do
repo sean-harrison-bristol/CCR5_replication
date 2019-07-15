@@ -265,23 +265,51 @@ rename v2 snp
 rename v4 pos
 merge 1:m snp using "results.dta", nogen keep(3)
 
+qui replace ea = "" if ea == "i"
+qui gen x = 1 if ea == "a"
+qui replace x = 2 if ea == "c"
+qui replace x = 3 if ea == "g"
+qui replace x = 4 if ea == "t"
+
+bysort snp: egen y = max(x)
+qui replace ea = "a" if y == 1
+qui replace ea = "c" if y == 2
+qui replace ea = "g" if y == 3
+qui replace ea = "t" if y == 4
+
+drop x y
+
+order binary, a(snp)
+sort snp binary
+
 save "results_combined.dta", replace
 
 ***
 
 use "results_combined.dta", clear
+
 forvalues i = 1/6 {
 	gen p`i' = -log10(a`i'_p)
 }
 
-twoway (scatter p4 pos, msize(tiny)) , ///
+twoway (scatter p4 pos if binary == 0, msize(tiny)) , ///
 xtitle("Chromosome Position (bp)") ytitle("-log10(p)") xline(46414975)
 graph export "Manhattan (best analysis).png", as(png) replace
 
-twoway (scatter p1 pos, msize(tiny)) (scatter p2 pos, msize(tiny)) (scatter p3 pos, msize(tiny)) /// 
+twoway (scatter p4 pos if binary == 1, msize(tiny)) , ///
+xtitle("Chromosome Position (bp)") ytitle("-log10(p)") xline(46414975)
+graph export "Manhattan (best analysis, binary).png", as(png) replace
+
+twoway (scatter p1 pos if binary == 0, msize(tiny)) (scatter p2 pos, msize(tiny)) (scatter p3 pos, msize(tiny)) /// 
 (scatter p4 pos, msize(tiny)) (scatter p5 pos, msize(tiny)) (scatter p6 pos, msize(tiny)), ///
 xtitle("Chromosome Position (bp)") ytitle("-log10(p)") xline(46414975) legend(off)
 graph export "Manhattan (all analyses).png", as(png) replace
+
+twoway (scatter p1 pos if binary == 1, msize(tiny)) (scatter p2 pos, msize(tiny)) (scatter p3 pos, msize(tiny)) /// 
+(scatter p4 pos, msize(tiny)) (scatter p5 pos, msize(tiny)) (scatter p6 pos, msize(tiny)), ///
+xtitle("Chromosome Position (bp)") ytitle("-log10(p)") xline(46414975) legend(off)
+graph export "Manhattan (all analyses, binary).png", as(png) replace
+
 
 
 ****
@@ -292,9 +320,27 @@ use "analysis2.dta", clear
 *Missingness is related to genotype batch
 *Genotype is related to death
 
+*Drop SNPs with only 1 allele
+foreach var of varlist rs* {
+	qui count if `var' != .
+	local N = r(N)
+	local drop = 0
+	forvalues i = 0/2 {
+		qui count if `var' == `i'
+		if r(N) == `N' {
+			local drop = 1
+		}
+	}
+	if `drop' == 1 {
+		drop `var'
+	}
+}
+	
 mi set flong
 mi register imputed rs*
 mi impute chained (ologit, augment) rs* = sex i.centre age n_22 pc* dead, add(5) rseed(100) dots 
+
+save "Imputation.dta", replace
 
 
 *Analyses with time = age of participant
